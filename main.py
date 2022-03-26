@@ -714,7 +714,7 @@ def riders(game_variables):
 
 def start_game():
     game_variables = setup()
-    if builtins.input("Do you need instructions (yes/no) ").lower == 'yes':
+    if builtins.input("Do you need instructions (yes/no) ") == 'yes':
         instructions()
 
     game_week_dates = ["March 29", "April 12", "April 26", "May 10", "May 24", "June 7", "June 21", "July 5", "July 19",
