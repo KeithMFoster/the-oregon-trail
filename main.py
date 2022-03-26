@@ -103,8 +103,7 @@ def illness(game_variables):
 
 def mountains(game_variables):
     # Are you in the mountains?
-    mountain_check = 9 - ((game_variables["mileage"] / 100 - 15) ** 2 + 72) / (
-            (game_variables["mileage"] / 100 - 15) ** 2 + 12)
+    mountain_check = 8 - 600000/((game_variables["mileage"]-3000)*game_variables["mileage"]+2370000)
 
     # A check to see if you have been caught in the mountains or not.
     if random.randint(1, 10) > mountain_check:
@@ -235,34 +234,20 @@ def buying_routine(object_name, min_amount, max_amount, wallet):
 
 
 def initial_purchases(game_variables):
-    # Oxen Team
-    oxen = buying_routine("oxen team", 200, 300, game_variables["cash"])
-    game_variables["cash"] -= oxen
-    # food
-    food = buying_routine("food", 1, 99999, game_variables["cash"])
-    game_variables["cash"] -= food
+    # Oxen Team, food, ammo, clothing, miscellaneous supplies
+    items=[["oxen team", 200, 300],["food", 1, 99999],["ammunition", 1, 99999],["clothing", 1, 99999],["miscellaneous supplies", 1, 99999]]
+    buyings = [buying_routine(i[0], i[1], i[2], game_variables["cash"]) for i in items]
+    [oxen,food,ammo,clothing,misc]=buyings
 
-    # ammo
-    ammo = buying_routine("ammunition", 1, 99999, game_variables["cash"])
-    game_variables["cash"] -= ammo
-
-    # clothing
-    clothing = buying_routine("clothing", 1, 99999, game_variables["cash"])
-    game_variables["cash"] -= clothing
-
-    # miscellaneous supplies
-    misc = buying_routine("miscellaneous supplies", 1, 99999, game_variables["cash"])
-    game_variables["cash"] -= misc
-
-    total = 700 - oxen - clothing - ammo - food - misc
-    if total < 0:
+    if sum(buyings) > game_variables["cash"]:
         print("You Overspent -- You only had $700 to spend. Try Again.")
         initial_purchases(game_variables)
+    else:
+        game_variables["cash"] -= sum(buyings)
 
-    ammo = ammo * 50
+    ammo *= 50
     print("After all your purchases. You now have %d dollars left." % total)
 
-    game_variables["cash"] = total
     game_variables["animals"] = oxen
     game_variables["ammunition"] = ammo
     game_variables["clothing"] = clothing
@@ -306,9 +291,7 @@ except bullets
 when asked to enter money amounts, don't use a ""$"".\n
 good luck!!!''')
 
-
-def user_stats(game_variables):
-    # If any of the variables are below zero, we will set them to zero here.
+def lowerLimit(game_variables): # If any of the variables are below zero, we will set them to zero here.
     if game_variables["food"] < 0:
         game_variables["food"] = 0
     if game_variables["ammunition"] < 0:
@@ -317,6 +300,8 @@ def user_stats(game_variables):
         game_variables["clothing"] = 0
     if game_variables["supplies"] < 0:
         game_variables["supplies"] = 0
+def user_stats(game_variables):
+    lowerLimit(game_variables)
     if game_variables["cash"] < 0:
         game_variables["cash"] = 0
 
@@ -357,20 +342,9 @@ def final_turn(game_variables):
     print('''\tPresident James K. Polk sends you his\n\theartiest congratulations
 \tAnd wishes you a prosperous life ahead\n\tat you new home.''')
 
-
 def game_loop(game_variables):
     input_x = 0
-    if game_variables["food"] < 0:
-        game_variables["food"] = 0
-
-    if game_variables["ammunition"] < 0:
-        game_variables["ammunition"] = 0
-
-    if game_variables["clothing"] < 0:
-        game_variables["clothing"] = 0
-
-    if game_variables["supplies"] < 0:
-        game_variables["supplies"] = 0
+    lowerLimit(game_variables)
 
     if game_variables["food"] < 13:
         print("\n\nYou'd better do some hunting or buy food and soon!!!!")
@@ -401,7 +375,7 @@ def game_loop(game_variables):
     if not game_variables["fort_flag"]:
         while True:
             try:
-                input_x = int(builtins.input("\nDo you want to (1) Hunt, or (2) Continue: "))
+                input_x = int(builtins.input("\nDo you want to (1) Stop at the next fort, (2) Hunt, or (3) Continue: "))
             except ValueError:
                 print("Sorry, I didn't understand that.")
             if 0 < input_x < 3:
@@ -409,7 +383,7 @@ def game_loop(game_variables):
                     print("TOUGH -- You need more bullets to go hunting.")
                 else:
                     game_variables["fort_flag"] = True
-                    input_x = input_x + 1
+                    input_x += 1
                     break
             else:
                 input_x = 3
@@ -417,15 +391,16 @@ def game_loop(game_variables):
     else:
         while True:
             try:
-                input_x = int(builtins.input("\nDo you want to (1) Stop at the next fort, (2) Hunt, or (3) Continue: "))
+                input_x = int(builtins.input("\nDo you want to (1) Hunt, or (2) Continue: "))
             except ValueError:
                 print("Sorry, I didn't understand that.")
-            if input_x < 1 or input_x > 3:
-                input_x = 3
-                break
-            elif input_x == 2 and game_variables["ammunition"] < 39:
-                print("TOUGH -- You need more bullets to go hunting.")
+            if input_x == 1:
+                if game_variables["ammunition"] < 39:
+                    print("TOUGH -- You need more bullets to go hunting.")
+                else:
+                    break
             else:
+                input_x = 3
                 break
 
     if input_x == 1:
