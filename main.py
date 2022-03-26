@@ -244,18 +244,28 @@ def initial_purchases(game_variables):
         initial_purchases(game_variables)
     else:
         game_variables["cash"] -= sum(buyings)
+        print("After all your purchases. You now have %d dollars left." % total)
+        game_variables["animals"] = oxen
+        game_variables["ammunition"] = ammo*50
+        game_variables["clothing"] = clothing
+        game_variables["food"] = food
+        game_variables["supplies"] = misc
 
-    ammo *= 50
-    print("After all your purchases. You now have %d dollars left." % total)
+        return game_variables
 
-    game_variables["animals"] = oxen
-    game_variables["ammunition"] = ammo
-    game_variables["clothing"] = clothing
-    game_variables["food"] = food
-    game_variables["supplies"] = misc
+def fort(game_variables):
+    print("Enter what you wish to spend on the following:")
+    # food, ammo, clothing, miscellaneous supplies
+    buyings = [buying_routine(i, 0, 9999, game_variables["cash"]) for i in ["food","ammo","clothing","supplies"]]
+    game_variables["cash"] -= sum(buyings)
+    [food,ammo,clothing,misc] = buyings
+    game_variables["food"] += int(.66 * food)
+    game_variables["ammunition"] += int(.66 * ammo) * 50
+    game_variables["clothing"] += int(.66 * clothing)
+    game_variables["supplies"] += int(.66 * misc)
+    game_variables["mileage"] -= 45
 
     return game_variables
-
 
 def instructions():
     print('''This program simulates a trip over the oregon trail from Independence,
@@ -371,38 +381,23 @@ def game_loop(game_variables):
     else:
         print("Total Mileage:   % d" % game_variables["mileage"])
     user_stats(game_variables)
-
-    if not game_variables["fort_flag"]:
-        while True:
-            try:
-                input_x = int(builtins.input("\nDo you want to (1) Stop at the next fort, (2) Hunt, or (3) Continue: "))
-            except ValueError:
-                print("Sorry, I didn't understand that.")
-            if 0 < input_x < 3:
-                if input_x == 2 and game_variables["ammunition"] < 39:
-                    print("TOUGH -- You need more bullets to go hunting.")
-                else:
+    fort=game_variables["fort_flag"]
+    while True:
+        try:
+            input_x = int(builtins.input("\nDo you want to",("(1) Hunt, or (2) Continue: " if fort else "(1) Stop at the next fort, (2) Hunt, or (3) Continue: ")))
+        except ValueError:
+            print("Sorry, I didn't understand that.")
+        if 0 < input_x < 3-fort:
+            if input_x == 2-fort and game_variables["ammunition"] < 39:
+                print("TOUGH -- You need more bullets to go hunting.")
+            else:
+                if input_x==1 and not fort:
                     game_variables["fort_flag"] = True
-                    input_x += 1
-                    break
-            else:
-                input_x = 3
+                    input_x += 2
                 break
-    else:
-        while True:
-            try:
-                input_x = int(builtins.input("\nDo you want to (1) Hunt, or (2) Continue: "))
-            except ValueError:
-                print("Sorry, I didn't understand that.")
-            if input_x == 1:
-                if game_variables["ammunition"] < 39:
-                    print("TOUGH -- You need more bullets to go hunting.")
-                else:
-                    break
-            else:
-                input_x = 3
-                break
-
+        else:
+            input_x = 3
+            break
     if input_x == 1:
         game_variables = fort(game_variables)
     elif input_x == 2:
@@ -417,41 +412,12 @@ def game_loop(game_variables):
             print("Sorry, I didn't understand that.")
         if (game_variables["food"] - (8 - 5 * input_x)) < game_variables["food"]:
             print("You can't eat that well.")
-        elif input_x == 2 and game_variables["ammunition"] < 39:
-            print("TOUGH -- You need more bullets to go hunting.")
         else:
             break
     game_variables["food"] -= 8 + 5 * input_x
     game_variables["mileage"] += game_variables["animals"] / 5 + random.randint(157, 166)
     game_variables["insufficient_clothing"] = False
     game_variables["blizzard"] = False
-
-    return game_variables
-
-
-def fort(game_variables):
-    print("Enter what you wish to spend on the following:")
-    # food
-    food = buying_routine("food", 0, 9999, game_variables["cash"])
-    game_variables["cash"] -= food
-    game_variables["food"] += int(.66 * food)
-
-    # ammo
-    ammo = buying_routine("ammo", 0, 9999, game_variables["cash"])
-    game_variables["cash"] -= ammo
-    game_variables["ammunition"] = game_variables["ammunition"] + int(.66 * ammo) * 50
-
-    # clothing
-    clothing = buying_routine("clothing", 0, 9999, game_variables["cash"])
-    game_variables["cash"] -= clothing
-    game_variables["clothing"] += int(.66 * ammo) * 50
-
-    # miscellaneous supplies
-    misc = buying_routine("supplies", 0, 9999, game_variables["cash"])
-    game_variables["cash"] -= misc
-    game_variables["supplies"] += int(.66 * misc)
-
-    game_variables["mileage"] -= 45
 
     return game_variables
 
@@ -484,7 +450,7 @@ def do_events(game_variables):
     if random.randint(1, 100) < 50:
         # 33% chance that an event would happen. But, each event would be an incremental sequence
         # of events. If by chance the user has over 16 events, it will be just #16.
-        game_variables["event_counter"] = game_variables["event_counter"] + 1
+        game_variables["event_counter"] += 1
         new_event = game_variables["event_counter"]
 
         if new_event == 1:
@@ -533,7 +499,7 @@ def do_events(game_variables):
             game_variables["food"] -= 40
             game_variables["ammunition"] -= 400
             game_variables["mileage"] -= 15
-            game_variables["supplies"] -= random.randint(1, 8) + 3
+            game_variables["supplies"] -= random.randint(3, 11)
         elif new_event == 10:
             print("Lose your way in heavy fog - Time is lost")
             game_variables["mileage"] -= random.randint(11, 15)
@@ -562,7 +528,7 @@ def do_events(game_variables):
                 game_variables["ammunition"] -= my_shooting * 20
         elif new_event == 14:
             print("Cold Weather!!")
-            if game_variables["clothing"] > random.randint(1, 4) + 22:
+            if game_variables["clothing"] > random.randint(23, 26):
                 print("You have enough clothing to keep you warm.")
             else:
                 print("You don't have enough clothing to keep you warm.")
