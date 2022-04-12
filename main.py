@@ -1,6 +1,5 @@
 import random
 import builtins
-import random
 import time
 import keyboard
 
